@@ -82,11 +82,19 @@ async function startSolver(targetUrl) {
             console.log("⚠️ Mengakses page timeout, tapi lanjut (page mungkin sudah load)...");
         }
 
-        // Gerakkan mouse acak biar dikira manusia
-        try {
-            await page.mouse.move(100, 100);
-            await page.mouse.move(200, 200, { steps: 10 });
-        } catch(e) {}
+        // Helper untuk memvisualisasikan klik (Merah = Klik)
+        await page.evaluate(() => {
+            const box = document.createElement('div');
+            box.id = 'puppeteer-mouse-pointer';
+            box.style.position = 'absolute';
+            box.style.width = '20px';
+            box.style.height = '20px';
+            box.style.background = 'red';
+            box.style.borderRadius = '50%';
+            box.style.zIndex = '100000';
+            box.style.pointerEvents = 'none';
+            document.body.appendChild(box);
+        });
 
         // --- LOGIKA WAIT FOR CLOUDFLARE ---
         console.log("🛡️  Memeriksa Cloudflare Challenge...");
@@ -110,9 +118,6 @@ async function startSolver(targetUrl) {
                     cleanCycles = 0; // Reset counter
                     console.log("⚠️  Cloudflare terdeteksi! Mencoba bypass...");
                     
-                    // DEBUG: Screenshot state saat stuck
-                    await page.screenshot({ path: path.join(__dirname, 'debug_cf_screenshot.png') });
-
                     if (!clickAttempted) {
                         clickAttempted = true;
                         try {
@@ -129,19 +134,33 @@ async function startSolver(targetUrl) {
                                     console.log(`👉 Iframe ditemukan: ${selector}`);
                                     const box = await frameElement.boundingBox();
                                     if (box) {
-                                        // Klik tengah iframe (Simple Click)
-                                        // await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-                                        
-                                        // HUMAN CLICK: Move -> Hover -> Down -> Wait -> Up
-                                        const x = box.x + box.width / 2;
+                                        // STRATEGI BARU: Klik di KIRI (Posisi Checkbox), bukan di tengah
+                                        // Widget biasanya lebar, checkbox ada di kiri (sekitar 30px dari kiri)
+                                        const x = box.x + 30; // 30px dari kiri iframe
                                         const y = box.y + box.height / 2;
+                                        
+                                        console.log(`📍 Koordinat Klik Sasaran: ${x}, ${y}`);
+
+                                        // VISUALISASI: Pindahkan titik merah ke lokasi klik
+                                        await page.evaluate((x, y) => {
+                                            const el = document.getElementById('puppeteer-mouse-pointer');
+                                            if(el) {
+                                                el.style.left = (x - 10) + 'px';
+                                                el.style.top = (y - 10) + 'px';
+                                            }
+                                        }, x, y);
+
+                                        // Screenshot SEBELUM Klik (untuk memastikan posisi)
+                                        await page.screenshot({ path: path.join(__dirname, 'debug_cf_screenshot.png') });
+
+                                        // AKSI KLIK
                                         await page.mouse.move(x, y, { steps: 5 });
                                         await new Promise(r => setTimeout(r, 100));
                                         await page.mouse.down();
                                         await new Promise(r => setTimeout(r, 150));
                                         await page.mouse.up();
 
-                                        console.log("🖱️  KLIK (Humanized)!");
+                                        console.log("🖱️  KLIK Checkbox (Left Side)!");
                                         await new Promise(r => setTimeout(r, 3000));
                                         break;
                                     }
@@ -153,21 +172,14 @@ async function startSolver(targetUrl) {
                     }
 
                     // --- KEYBOARD FALLBACK ---
-                    // Kadang klik mouse tidak ter-register di Xvfb, coba pakai Tab + Spasi
                     try {
                          // Focus ke page dulu
                          await page.click('body').catch(() => {});
-                         
-                         // Tekan Tab beberapa kali untuk cari checkbox
-                         for(let i=0; i<3; i++) {
+                         for(let i=0; i<2; i++) {
                              await page.keyboard.press('Tab');
                              await new Promise(r => setTimeout(r, 200));
                          }
-                         // Tekan keajaiban
                          await page.keyboard.press('Space');
-                         console.log("⌨️  Tekan SPACE (Keyboard Fallback)...");
-                         await new Promise(r => setTimeout(r, 500));
-                         await page.keyboard.press('Enter');
                     } catch(e) {}
                     // -------------------------
 
