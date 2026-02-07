@@ -35,11 +35,16 @@ async function startSolver(targetUrl) {
         // Command line: Chrome with remote debugging
         // NOTE: No --headless here, because CF detects headless chrome easily.
         // Use Xvfb for headless server environments.
-        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled`;
+        // Added --no-sandbox because VPS usually runs as root.
+        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox`;
         
         console.log(`🔥 Menjalankan Chrome: ${chromeCmd}`);
         // Kita execute dan biarkan jalan di background
         chromeProcess = exec(chromeCmd);
+
+        // Log validasi jika chrome gagal start
+        chromeProcess.stderr.on('data', (data) => console.error(`[Chrome Error]: ${data}`));
+        chromeProcess.on('exit', (code) => console.log(`[Chrome Exit]: Process exited with code ${code}`));
 
         // Tunggu Chrome nyala
         await new Promise(r => setTimeout(r, 4000));
