@@ -34,8 +34,8 @@ async function startSolver(targetUrl) {
 
         // Command line: Chrome with remote debugging
         // Flags optimized for Xvfb/VPS environments to pass WebGL checks
-        // Using angle+swiftshader to force CPU rendering properly
-        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox --disable-setuid-sandbox --ignore-gpu-blocklist --enable-webgl --use-gl=angle --use-angle=swiftshader --window-size=1920,1080`;
+        // Using angle+swiftshader with unsafe flag to force CPU rendering properly
+        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox --disable-setuid-sandbox --ignore-gpu-blocklist --enable-webgl --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1920,1080`;
         
         console.log(`🔥 Menjalankan Chrome: ${chromeCmd}`);
         // Kita execute dan biarkan jalan di background
