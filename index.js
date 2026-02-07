@@ -100,6 +100,9 @@ async function startSolver(targetUrl) {
                     cleanCycles = 0; // Reset counter
                     console.log("⚠️  Cloudflare terdeteksi! Mencoba bypass...");
                     
+                    // DEBUG: Screenshot state saat stuck
+                    await page.screenshot({ path: path.join(__dirname, 'debug_cf_screenshot.png') });
+
                     if (!clickAttempted) {
                         clickAttempted = true;
                         try {
@@ -148,6 +151,7 @@ async function startSolver(targetUrl) {
 
         if (!cloudflarePassed) {
              console.log("⚠️  Peringatan: Waktu tunggu habis.");
+             await page.screenshot({ path: path.join(__dirname, 'timeout_screenshot.png') });
         }
 
         // --- AMBIL HASIL (Cookies & UA) ---
@@ -219,6 +223,17 @@ app.post('/solve', async (req, res) => {
     }
 });
 
+// Endpoint untuk melihat screenshot debug terakhir (berguna di VPS)
+app.get('/screenshot', (req, res) => {
+    const p1 = path.resolve(__dirname, 'debug_cf_screenshot.png');
+    if (fs.existsSync(p1)) return res.sendFile(p1);
+    
+    const p2 = path.resolve(__dirname, 'timeout_screenshot.png');
+    if (fs.existsSync(p2)) return res.sendFile(p2);
+    
+    res.status(404).send('No screenshot available yet.');
+});
+
 app.get('/', (req, res) => {
     res.send('Universal Cloudflare Solver API via Puppeteer/Chrome is running.');
 });
@@ -226,4 +241,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server Solver berjalan di http://localhost:${PORT}`);
     console.log(`👉 Gunakan endpoint [POST] /solve`);
+    console.log(`📷 Endpoint Screenshot: http://localhost:${PORT}/screenshot`);
 });
