@@ -21,23 +21,44 @@ An automated API service that uses **Puppeteer** and **Real Chrome** to bypass C
     ```
 3.  **Ensure Chrome is Installed**:
     - This bot relies on `google-chrome-stable` being installed on your system.
+4.  **Install Xvfb** (for headless servers):
+    ```bash
+    sudo apt-get install xvfb
+    ```
 
 ---
 
 ## 🖥️ Running on Headless Server (VPS)
 
-Native Chrome Headless (`--headless=new`) is **often detected** by Cloudflare.
-To run this on a properly headless server (e.g., Ubuntu/Debian VPS) without a monitor, use **Xvfb** (Virtual Framebuffer):
+### Option 1: Using `xvfb-run` (Manual)
+Native Chrome Headless is detected by Cloudflare. Use **Xvfb** to trick it:
+```bash
+xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" node index.js
+```
 
-1. **Install Xvfb**:
+### Option 2: Using PM2 (Recommended)
+To keep the bot running in the background and auto-restart:
+
+1. **Install PM2**:
    ```bash
-   sudo apt-get install xvfb
+   npm install -g pm2
    ```
-2. **Run with Xvfb**:
+2. **Make the startup script executable**:
    ```bash
-   xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" node index.js
+   chmod +x start.sh
+   # Content of start.sh:
+   # #!/bin/bash
+   # xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" node index.js
    ```
-This tricks Cloudflare into thinking it's running in a real desktop environment, which is crucial for passing the challenge.
+3. **Start with PM2**:
+   ```bash
+   pm2 start start.sh --name "turnstile-solver"
+   ```
+4. **Save list**:
+   ```bash
+   pm2 save
+   pm2 startup
+   ```
 
 ---
 
@@ -47,8 +68,6 @@ This tricks Cloudflare into thinking it's running in a real desktop environment,
 Run the API server on port 8000:
 ```bash
 node index.js
-# OR with Xvfb (recommended for servers):
-xvfb-run node index.js
 ```
 *The server will keep Chrome running in the background for faster subsequent requests.*
 
