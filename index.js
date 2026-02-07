@@ -35,7 +35,7 @@ async function startSolver(targetUrl) {
         // Command line: Chrome with remote debugging
         // Flags optimized for Xvfb/VPS environments to pass WebGL checks
         // Using angle+swiftshader with unsafe flag to force CPU rendering properly
-        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox --disable-setuid-sandbox --ignore-gpu-blocklist --enable-webgl --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1920,1080`;
+        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --ignore-gpu-blocklist --enable-webgl --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1920,1080 --window-position=0,0`;
         
         console.log(`🔥 Menjalankan Chrome: ${chromeCmd}`);
         // Kita execute dan biarkan jalan di background
@@ -129,9 +129,19 @@ async function startSolver(targetUrl) {
                                     console.log(`👉 Iframe ditemukan: ${selector}`);
                                     const box = await frameElement.boundingBox();
                                     if (box) {
-                                        // Klik tengah iframe
-                                        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-                                        console.log("🖱️  KLIK!");
+                                        // Klik tengah iframe (Simple Click)
+                                        // await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+                                        
+                                        // HUMAN CLICK: Move -> Hover -> Down -> Wait -> Up
+                                        const x = box.x + box.width / 2;
+                                        const y = box.y + box.height / 2;
+                                        await page.mouse.move(x, y, { steps: 5 });
+                                        await new Promise(r => setTimeout(r, 100));
+                                        await page.mouse.down();
+                                        await new Promise(r => setTimeout(r, 150));
+                                        await page.mouse.up();
+
+                                        console.log("🖱️  KLIK (Humanized)!");
                                         await new Promise(r => setTimeout(r, 3000));
                                         break;
                                     }
@@ -155,7 +165,7 @@ async function startSolver(targetUrl) {
                          }
                          // Tekan keajaiban
                          await page.keyboard.press('Space');
-                         console.log("⌨️  Mengirim tombol SPACE (Keyboard Fallback)...");
+                         console.log("⌨️  Tekan SPACE (Keyboard Fallback)...");
                          await new Promise(r => setTimeout(r, 500));
                          await page.keyboard.press('Enter');
                     } catch(e) {}
