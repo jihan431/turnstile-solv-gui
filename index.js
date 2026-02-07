@@ -33,10 +33,8 @@ async function startSolver(targetUrl) {
         }
 
         // Command line: Chrome with remote debugging
-        // NOTE: No --headless here, because CF detects headless chrome easily.
-        // Use Xvfb for headless server environments.
-        // Added --no-sandbox because VPS usually runs as root.
-        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox`;
+        // Flags optimized for Xvfb/VPS environments to pass WebGL checks
+        const chromeCmd = `google-chrome-stable --remote-debugging-port=${DEBUG_PORT} --user-data-dir="${USER_DATA_DIR}" --no-first-run --disable-blink-features=AutomationControlled --no-sandbox --disable-setuid-sandbox --ignore-gpu-blocklist --enable-webgl --use-gl=angle --use-angle=gl-egl --window-size=1920,1080`;
         
         console.log(`🔥 Menjalankan Chrome: ${chromeCmd}`);
         // Kita execute dan biarkan jalan di background
