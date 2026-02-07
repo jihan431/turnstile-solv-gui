@@ -121,50 +121,58 @@ async function startSolver(targetUrl) {
                     if (!clickAttempted) {
                         clickAttempted = true;
                         try {
-                            const selectors = [
-                                'iframe[src*="challenges.cloudflare.com"]',
-                                '#turnstile-wrapper iframe',
-                                '.cf-turnstile iframe',
-                                'iframe[title*="Widget"]'
-                            ];
+                            // CARA BARU: Cari Frame via URL (lebih reliable daripada selector)
+                            const frames = page.frames();
+                            const cfFrame = frames.find(f => f.url().includes('challenges.cloudflare.com') || f.url().includes('turnstile'));
+                            
+                            let box = null;
 
-                            for (const selector of selectors) {
-                                const frameElement = await page.$(selector);
+                            if (cfFrame) {
+                                console.log(`👉 Frame ditemukan via URL: ${cfFrame.url()}`);
+                                const frameElement = await cfFrame.frameElement();
                                 if (frameElement) {
-                                    console.log(`👉 Iframe ditemukan: ${selector}`);
-                                    const box = await frameElement.boundingBox();
-                                    if (box) {
-                                        // STRATEGI BARU: Klik di KIRI (Posisi Checkbox), bukan di tengah
-                                        // Widget biasanya lebar, checkbox ada di kiri (sekitar 30px dari kiri)
-                                        const x = box.x + 30; // 30px dari kiri iframe
-                                        const y = box.y + box.height / 2;
-                                        
-                                        console.log(`📍 Koordinat Klik Sasaran: ${x}, ${y}`);
-
-                                        // VISUALISASI: Pindahkan titik merah ke lokasi klik
-                                        await page.evaluate((x, y) => {
-                                            const el = document.getElementById('puppeteer-mouse-pointer');
-                                            if(el) {
-                                                el.style.left = (x - 10) + 'px';
-                                                el.style.top = (y - 10) + 'px';
-                                            }
-                                        }, x, y);
-
-                                        // Screenshot SEBELUM Klik (untuk memastikan posisi)
-                                        await page.screenshot({ path: path.join(__dirname, 'debug_cf_screenshot.png') });
-
-                                        // AKSI KLIK
-                                        await page.mouse.move(x, y, { steps: 5 });
-                                        await new Promise(r => setTimeout(r, 100));
-                                        await page.mouse.down();
-                                        await new Promise(r => setTimeout(r, 150));
-                                        await page.mouse.up();
-
-                                        console.log("🖱️  KLIK Checkbox (Left Side)!");
-                                        await new Promise(r => setTimeout(r, 3000));
-                                        break;
-                                    }
+                                    box = await frameElement.boundingBox();
                                 }
+                            } else {
+                                // Fallback: Coba cari iframe via selector biasa jika URL gagal
+                                const frameElement = await page.$('iframe[src*="challenges.cloudflare.com"], #turnstile-wrapper iframe');
+                                if (frameElement) {
+                                    console.log(`👉 Frame ditemukan via Selector`);
+                                    box = await frameElement.boundingBox();
+                                }
+                            }
+
+                            if (box) {
+                                // STRATEGI BARU: Klik di KIRI (Posisi Checkbox), bukan di tengah
+                                // Widget biasanya lebar, checkbox ada di kiri (sekitar 30px dari kiri)
+                                const x = box.x + 30; // 30px dari kiri iframe
+                                const y = box.y + box.height / 2;
+                                
+                                console.log(`📍 Koordinat Klik Sasaran: ${x}, ${y}`);
+
+                                // VISUALISASI: Pindahkan titik merah ke lokasi klik
+                                await page.evaluate((x, y) => {
+                                    const el = document.getElementById('puppeteer-mouse-pointer');
+                                    if(el) {
+                                        el.style.left = (x - 10) + 'px';
+                                        el.style.top = (y - 10) + 'px';
+                                    }
+                                }, x, y);
+
+                                // Screenshot SEBELUM Klik (untuk memastikan posisi)
+                                await page.screenshot({ path: path.join(__dirname, 'debug_cf_screenshot.png') });
+
+                                // AKSI KLIK (Humanized)
+                                await page.mouse.move(x, y, { steps: 5 });
+                                await new Promise(r => setTimeout(r, 100)); // Hover sejenak
+                                await page.mouse.down();
+                                await new Promise(r => setTimeout(r, 150)); // Tahan sedikit
+                                await page.mouse.up();
+
+                                console.log("🖱️  KLIK Checkbox (Left Side)!");
+                                await new Promise(r => setTimeout(r, 3000));
+                            } else {
+                                console.log("❌ Gagal menemukan box iframe Cloudflare.");
                             }
                         } catch (clickErr) {
                             console.log(`❌ Gagal klik: ${clickErr.message}`);
