@@ -131,6 +131,26 @@ async function startSolver(targetUrl) {
                             console.log(`❌ Gagal klik: ${clickErr.message}`);
                         }
                     }
+
+                    // --- KEYBOARD FALLBACK ---
+                    // Kadang klik mouse tidak ter-register di Xvfb, coba pakai Tab + Spasi
+                    try {
+                         // Focus ke page dulu
+                         await page.click('body').catch(() => {});
+                         
+                         // Tekan Tab beberapa kali untuk cari checkbox
+                         for(let i=0; i<3; i++) {
+                             await page.keyboard.press('Tab');
+                             await new Promise(r => setTimeout(r, 200));
+                         }
+                         // Tekan keajaiban
+                         await page.keyboard.press('Space');
+                         console.log("⌨️  Mengirim tombol SPACE (Keyboard Fallback)...");
+                         await new Promise(r => setTimeout(r, 500));
+                         await page.keyboard.press('Enter');
+                    } catch(e) {}
+                    // -------------------------
+
                     await new Promise(r => setTimeout(r, 2000));
                     continue; 
                 } else {
