@@ -68,6 +68,10 @@ async function startSolver(targetUrl) {
         const pages = await browser.pages();
         const page = pages[0] || await browser.newPage();
         
+        // --- SAMARKAN IDENTITAS ---
+        // Force pakai User-Agent Windows 10 Chrome terbaru biar tidak dikira Linux Server
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+
         console.log(`🔗 Mengakses ${targetUrl}...`);
         try {
             await page.goto(targetUrl, { 
@@ -77,6 +81,12 @@ async function startSolver(targetUrl) {
         } catch (e) {
             console.log("⚠️ Mengakses page timeout, tapi lanjut (page mungkin sudah load)...");
         }
+
+        // Gerakkan mouse acak biar dikira manusia
+        try {
+            await page.mouse.move(100, 100);
+            await page.mouse.move(200, 200, { steps: 10 });
+        } catch(e) {}
 
         // --- LOGIKA WAIT FOR CLOUDFLARE ---
         console.log("🛡️  Memeriksa Cloudflare Challenge...");
